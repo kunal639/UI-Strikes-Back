@@ -1,0 +1,18 @@
+# Backend (Python)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+*.egg-info/
+.eggs/
+
+# Shared / IDE (frontend has its own for node_modules, dist, etc.)
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
