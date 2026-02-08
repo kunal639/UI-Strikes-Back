@@ -1,0 +1,116 @@
+[
+    {
+        "id": "block-1770558032",
+        "device_id": "1",
+        "alert_type": "Threat Contained (Quarantine)",
+        "severity": "high",
+        "message": "User authorized quarantine for Living Room Camera. Network access severed.",
+        "status": "contained",
+        "detected_at": "2026-02-08T19:10:32Z",
+        "device": {
+            "id": 1,
+            "name": "Living Room Camera",
+            "type": "camera",
+            "ip_address": "192.168.1.101",
+            "status": "offline",
+            "risk_level": "high",
+            "baseline_activity": 40,
+            "current_activity": 400
+        }
+    },
+    {
+        "id": "val-1770558019",
+        "device_id": "1",
+        "alert_type": "Threat Validation Confirmed",
+        "severity": "high",
+        "message": "Suspicious activity on Living Room Camera confirmed via decoy interaction.",
+        "status": "validated",
+        "detected_at": "2026-02-08T19:10:19Z",
+        "device": {
+            "id": 1,
+            "name": "Living Room Camera",
+            "type": "camera",
+            "ip_address": "192.168.1.101",
+            "status": "online",
+            "risk_level": "high",
+            "baseline_activity": 40,
+            "current_activity": 400
+        }
+    },
+    {
+        "id": "res-1770525589",
+        "device_id": "1",
+        "alert_type": "Incident Resolved (Restored)",
+        "severity": "safe",
+        "message": "Device Living Room Camera manually restored to network after audit.",
+        "status": "resolved",
+        "detected_at": "2026-02-08T10:09:49Z",
+        "device": {
+            "id": 1,
+            "name": "Living Room Camera",
+            "type": "camera",
+            "ip_address": "192.168.1.101",
+            "status": "online",
+            "risk_level": "safe",
+            "baseline_activity": 40,
+            "current_activity": 40
+        }
+    },
+    {
+        "id": "block-1770525584",
+        "device_id": "1",
+        "alert_type": "Threat Contained (Quarantine)",
+        "severity": "high",
+        "message": "User authorized quarantine for Living Room Camera. Network access severed.",
+        "status": "contained",
+        "detected_at": "2026-02-08T10:09:44Z",
+        "device": {
+            "id": 1,
+            "name": "Living Room Camera",
+            "type": "camera",
+            "ip_address": "192.168.1.101",
+            "status": "offline",
+            "risk_level": "high",
+            "baseline_activity": 40,
+            "current_activity": 400
+        }
+    },
+    {
+        "id": "res-1770525310",
+        "device_id": "1",
+        "alert_type": "Incident Resolved (Restored)",
+        "severity": "safe",
+        "message": "Device Living Room Camera manually restored to network after audit.",
+        "status": "resolved",
+        "detected_at": "2026-02-08T10:05:10Z",
+        "device": {
+            "id": 1,
+            "name": "Living Room Camera",
+            "type": "camera",
+            "ip_address": "192.168.1.101",
+            "status": "online",
+            "risk_level": "safe",
+            "baseline_activity": 40,
+            "current_activity": 40
+        }
+    },
+    {
+        "id": "block-1770525303",
+        "device_id": "1",
+        "alert_type": "Threat Contained (Quarantine)",
+        "severity": "high",
+        "message": "User authorized quarantine for Living Room Camera. Network access severed.",
+        "status": "contained",
+        "detected_at": "2026-02-08T10:05:03Z",
+        "device": {
+            "id": 1,
+            "name": "Living Room Camera",
+            "type": "camera",
+            "ip_address": "192.168.1.101",
+            "status": "offline",
+            "risk_level": "high",
+            "baseline_activity": 40,
+            "current_activity": 400
+        }
+    }
+]

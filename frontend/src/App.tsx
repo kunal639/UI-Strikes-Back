@@ -15,13 +15,64 @@ import SimulationControl from './components/SimulateControl';
 const API_BASE = "http://localhost:8000"; // Update this to your FastAPI port
 
 function App() {
+  // --- 1. UI NAVIGATION STATE ---
   const [activeSection, setActiveSection] = useState('overview');
+
+  // --- 2. AGENTIC SYSTEM STATE (The "Brain" results) ---
   const [securityState, setSecurityState] = useState<SecurityState>('normal');
+  const [confidence, setConfidence] = useState(0);
+  const [affectedDeviceId, setAffectedDeviceId] = useState<number | null>(null);
+
+  // --- 3. DATA & TELEMETRY STATE ---
   const [devices, setDevices] = useState<Device[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [allIncidents, setAllIncidents] = useState<Alert[]>([]);
   const [validationSteps, setValidationSteps] = useState<ValidationStep[]>([]);
   const [showActions, setShowActions] = useState(false);
+
+  // --- 4. THE REACTIVE SYNC (Polling the Agent) ---
+  useEffect(() => {
+    const syncWithAgent = async () => {
+      try {
+        // 1. Fetch Global State (Status, Confidence, Affected ID)
+        const stateRes = await fetch(`${API_BASE}/state`);
+        const stateData = await stateRes.json();
+  
+        setSecurityState(stateData.status);
+        setConfidence(stateData.confidence);
+        setAffectedDeviceId(stateData.affected_device);
+        setShowActions(stateData.status === 'validated');
+  
+        // 2. FETCH DEVICE DATA (This makes the numbers jump in the UI!)
+        const devicesRes = await fetch(`${API_BASE}/devices`);
+        const devicesData = await devicesRes.json();
+        setDevices(devicesData);
+  
+        // 3. FETCH HISTORY (This shows new incident logs automatically)
+        const historyRes = await fetch(`${API_BASE}/history`);
+        const historyData = await historyRes.json();
+        setAllIncidents(historyData);
+  
+        // 4. Update Progress Steps
+        const steps: ValidationStep[] = [
+          { id: '1', label: 'Monitoring Baseline', status: 'completed' },
+          { id: '2', label: 'Anomaly Detection', status: stateData.status !== 'normal' ? 'completed' : 'active' },
+          { id: '3', label: 'Threat Validation', status: stateData.status === 'validated' ? 'completed' : (stateData.status === 'anomaly' ? 'active' : 'pending') },
+          { id: '4', label: 'Response Ready', status: stateData.status === 'validated' ? 'active' : 'pending' },
+        ];
+        setValidationSteps(steps);
+  
+      } catch (error) {
+        console.error("Agent Sync Error:", error);
+      }
+    };
+  
+    // Run the first sync immediately
+    syncWithAgent();
+  
+    const interval = setInterval(syncWithAgent, 2000);
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array is correct
 
   // --- API CALLS ---
 
@@ -104,24 +155,35 @@ function App() {
   };
   
   const handleApprove = async () => {
-    const alert = alerts[0];
-    if (alert && alert.device_id) {
-      // 1. Ensure the URL matches the backend route precisely
-      // 2. Convert string ID to number for the backend if necessary
-      const id = parseInt(alert.device_id);
+    if (!affectedDeviceId) return;
   
-      await fetch(`${API_BASE}/devices/block/${id}`, { method: 'POST' });
-      
-      // We don't strictly need to manually set states here because 
-      // fetchData() will receive the 'normal' status from the backend 
-      // and trigger those updates automatically in your useEffect loop.
-      fetchData();
+    try {
+      // 1. Tell the backend to block the specific device
+      const response = await fetch(`${API_BASE}/devices/${affectedDeviceId}/block`, {
+        method: 'POST',
+      });
+  
+      if (response.ok) {
+        // 2. Clear local UI states
+        setShowActions(false);
+        
+        // The Agent Loop will now automatically see the device is offline,
+        // stop seeing the spike, and move securityState back to 'normal'.
+        console.log(`Device ${affectedDeviceId} successfully neutralized.`);
+      }
+    } catch (error) {
+      console.error("Action Error:", error);
     }
   };
 
   const handleReject = async () => {
-    await fetch(`${API_BASE}/simulate/normal`, { method: 'POST' });
-    fetchData();
+    try {
+      // Tell the backend to reset the simulation state
+      await fetch(`${API_BASE}/simulate/reset`, { method: 'POST' });
+      setShowActions(false);
+    } catch (error) {
+      console.error("Reset Error:", error);
+    }
   };
 
   const handleTriggerAnomaly = async (id: number) => {
@@ -177,53 +239,65 @@ function App() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-900/10 blur-[120px] rounded-full pointer-events-none" />
   
       {/* --- SIDEBAR --- */}
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} securityState={securityState} />
+      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} securityState={securityState} affectedDeviceId={affectedDeviceId} />
       
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <Header securityState={securityState} />
+        <Header securityState={securityState} confidence={confidence} />
         
         <main className="flex-1 overflow-auto p-8 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-8">
             
             {/* --- OVERVIEW TAB --- */}
-            {activeSection === 'overview' && (
-              <>
-                {securityState === 'normal' ? (
-                  <>
-                    <DeviceOverview devices={devices} onUnblock={handleUnblock} />
-                    <IncidentHistory incidents={allIncidents} />
-                  </>
-                ) : (
-                  <>
-                    {alerts.length > 0 && <AlertPanel alerts={alerts} />}
-                    <NetworkActivity data={networkData} />
-                    <ValidationTimeline steps={validationSteps} />
-                    {showActions && (
-                      <ActionPanel
-                        onApprove={handleApprove}
-                        onReject={handleReject}
-                        recommendation="Anomaly validated by Honeypot. Block device?"
-                      />
-                    )}
-                    <AIReasoning data={{
-                      confidence: alerts[0]?.confidence || 0,
-                      reasoning: [
-                        `Activity level (${alerts[0]?.device?.current_activity}) is 10x the baseline.`,
-                        "Interaction with network honeypot confirmed.",
-                        "Pattern matches known data exfiltration behavior."
-                      ],
-                      baseline: { "Baseline Activity": alerts[0]?.device?.baseline_activity },
-                      current: { "Current Activity": alerts[0]?.device?.current_activity }
-                    }} />
-                  </>
-                )}
-              </>
+{activeSection === 'overview' && (
+  <div className="space-y-8 animate-in fade-in duration-500">
+    {/* 1. ALWAYS show the inventory so we can see nodes turn red/glow */}
+    <DeviceOverview 
+      devices={devices} 
+      onUnblock={handleUnblock} 
+      highlightId={affectedDeviceId} 
+    />
+
+    {/* 2. Show History when normal, OR show the Agent Intelligence when there's a threat */}
+    {securityState === 'normal' ? (
+      <IncidentHistory incidents={allIncidents} />
+    ) : (
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6">
+          {alerts.length > 0 && <AlertPanel alerts={alerts} />}
+          <NetworkActivity data={networkData} securityState={securityState} />
+          <ValidationTimeline steps={validationSteps} />
+          
+          {showActions && (
+            <ActionPanel
+              onApprove={handleApprove}
+              onReject={handleReject}
+              recommendation="Anomaly validated by Honeypot. Block device?"
+            />
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <AIReasoning data={{
+            confidence: confidence, // Use the real state from the Agent
+            reasoning: [
+              `Activity spike detected on NODE_${affectedDeviceId}.`,
+              "Interaction with network honeypot confirmed.",
+              "Pattern matches known data exfiltration behavior."
+            ],
+            baseline: { "Baseline Activity": devices.find(d => d.id === affectedDeviceId)?.baseline_activity || 0 },
+            current: { "Current Activity": devices.find(d => d.id === affectedDeviceId)?.current_activity || 0 }
+          }} />
+                  <IncidentHistory incidents={allIncidents} />
+                </div>
+              </div>
             )}
+          </div>
+        )}
   
             {/* --- DEVICES TAB --- */}
             {activeSection === 'devices' && (
-              <DeviceOverview devices={devices} onUnblock={handleUnblock} />
+              <DeviceOverview devices={devices} onUnblock={handleUnblock} highlightId={affectedDeviceId} />
             )}
   
             {/* --- ALERTS TAB --- */}
@@ -234,7 +308,7 @@ function App() {
             {/* --- ACTIVITY (SECURITY TESTING) TAB --- */}
             {activeSection === 'activity' && (
               <div className="space-y-6">
-                <NetworkActivity data={networkData} />
+                <NetworkActivity data={networkData} securityState={securityState} />
                 <SimulationControl 
                   devices={devices}
                   onTriggerAnomaly={handleTriggerAnomaly}

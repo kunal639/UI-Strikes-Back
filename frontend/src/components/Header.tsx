@@ -2,13 +2,13 @@ import { Shield, Bell, Settings, Activity, Terminal } from 'lucide-react';
 
 interface HeaderProps {
   securityState: 'normal' | 'warning' | 'threat';
+  confidence: number; // Add this line
 }
 
-export default function Header({ securityState }: HeaderProps) {
+export default function Header({ securityState, confidence }: HeaderProps) {
   return (
     <header className="h-20 bg-[#020408]/80 backdrop-blur-md border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-40">
       <div className="flex items-center space-x-6">
-        {/* System ID / Version */}
         <div className="flex flex-col">
           <div className="flex items-center space-x-2">
             <Terminal className="w-4 h-4 text-blue-500" />
@@ -17,7 +17,6 @@ export default function Header({ securityState }: HeaderProps) {
           <h1 className="text-sm font-bold text-white uppercase tracking-[0.2em]">SecureHome Protocol</h1>
         </div>
 
-        {/* Engine Pulse Indicator */}
         <div className="flex items-center space-x-3 px-6 border-l border-white/10 h-10">
           <Activity className={`w-4 h-4 transition-colors duration-500 ${
             securityState === 'normal' ? 'text-blue-500/50' : 'text-red-500 animate-pulse'
@@ -32,10 +31,25 @@ export default function Header({ securityState }: HeaderProps) {
             </div>
           </div>
         </div>
-      </div> {/* <--- THIS DIV WAS MISSING IN YOUR SNIPPET TO CLOSE THE LEFT SECTION */}
+
+        {/* --- ADDED SECTION: AI CONFIDENCE --- */}
+        {securityState !== 'normal' && (
+          <div className="flex items-center space-x-3 px-6 border-l border-white/10 h-10 animate-in fade-in duration-500">
+            <div className="flex flex-col">
+              <span className="text-[8px] text-gray-500 uppercase font-black tracking-widest mb-1">AI Certainty</span>
+              <span className="text-xs font-mono text-blue-400">{(confidence * 100).toFixed(0)}%</span>
+            </div>
+            <div className="w-20 h-1 bg-white/5 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-1000" 
+                style={{ width: `${confidence * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center space-x-6">
-        {/* Dynamic Status Pill */}
         <div className={`px-4 py-1.5 rounded-full border flex items-center space-x-2 transition-all duration-500 ${
           securityState === 'normal' 
             ? 'bg-green-500/5 border-green-500/20' 
@@ -51,7 +65,6 @@ export default function Header({ securityState }: HeaderProps) {
           </span>
         </div>
 
-        {/* Action Icons */}
         <div className="flex items-center space-x-4 border-l border-white/10 pl-6">
           <button className="text-gray-500 hover:text-white transition-colors relative">
             <Bell className="w-5 h-5" />

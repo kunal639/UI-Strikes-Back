@@ -4,9 +4,10 @@ interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
   securityState: 'normal' | 'warning' | 'threat';
+  affectedDeviceId: number | null; // ADD THIS LINE
 }
 
-export default function Sidebar({ activeSection, onSectionChange, securityState }: SidebarProps) {
+export default function Sidebar({ activeSection, onSectionChange, securityState, affectedDeviceId }: SidebarProps) {
   const sections = [
     { id: 'overview', label: 'Command Overview', icon: LayoutDashboard },
     { id: 'devices', label: 'IoT Inventory', icon: Tablet },
@@ -48,7 +49,6 @@ export default function Sidebar({ activeSection, onSectionChange, securityState 
                   : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
               }`}
             >
-              {/* Neon Selection Bar */}
               {isActive && (
                 <div className="absolute left-0 top-1/4 bottom-1/4 w-[2px] bg-blue-500 shadow-[0_0_10px_#3b82f6] rounded-full" />
               )}
@@ -62,15 +62,29 @@ export default function Sidebar({ activeSection, onSectionChange, securityState 
         })}
       </nav>
 
-      {/* Footer System Status */}
+      {/* --- REPLACED FOOTER: DYNAMIC AGENT STATUS --- */}
       <div className="p-6 border-t border-white/5 bg-black/20">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Network Load</span>
-          <span className="text-[10px] font-mono text-blue-500">2.4 GB/s</span>
-        </div>
-        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-600 rounded-full w-1/3 shadow-[0_0_10px_#2563eb]" />
-        </div>
+        {affectedDeviceId && securityState !== 'normal' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] text-red-500 font-black uppercase tracking-widest animate-pulse">Breach Source</span>
+              <span className="text-[10px] font-mono text-red-400">NODE_{affectedDeviceId}</span>
+            </div>
+            <div className="h-1 w-full bg-red-500/20 rounded-full overflow-hidden">
+              <div className="h-full bg-red-600 rounded-full w-full shadow-[0_0_10px_#dc2626]" />
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Network Load</span>
+              <span className="text-[10px] font-mono text-blue-500">2.4 GB/s</span>
+            </div>
+            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 rounded-full w-1/3 shadow-[0_0_10px_#2563eb]" />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

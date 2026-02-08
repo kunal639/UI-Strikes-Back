@@ -5,34 +5,13 @@ def trigger_anomaly(device_id):
     for device in devices:
         if device["id"] == device_id:
             device["current_activity"] = device["baseline_activity"] * 10
-            device["risk_level"] = "warning"
-            system_state["status"] = "anomaly"
-            system_state["affected_device"] = device_id
             break
 
 def trigger_validation(device_id):
-    from state import system_state, devices, incident_history, save_history
+    from state import system_state
+    # We just flip the switch that says "Someone touched the honeypot"
     system_state["honeypot_triggered"] = True
-    system_state["status"] = "validated"
-    system_state["confidence"] = 0.9
-
-    for device in devices:
-        if device["id"] == device_id:
-            device["risk_level"] = "high"
-            # Record validation event
-            new_incident = {
-                "id": f"val-{int(time.time())}",
-                "device_id": str(device_id),
-                "alert_type": "Threat Validation Confirmed",
-                "severity": "high",
-                "message": f"Suspicious activity on {device['name']} confirmed via decoy interaction.",
-                "status": "validated", # Lifecycle Status
-                "detected_at": time.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                "device": device.copy()
-            }
-            incident_history.insert(0, new_incident)
-            save_history(incident_history)
-            break
+    system_state["affected_device"] = device_id
 
 def quarantine_device(device_id):
     from state import devices, system_state, incident_history, save_history

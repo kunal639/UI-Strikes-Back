@@ -4,9 +4,10 @@ import type { Device, RiskLevel } from '../types';
 interface DeviceOverviewProps {
   devices: Device[];
   onUnblock: (id: number) => void;
+  highlightId: number | null; 
 }
 
-export default function DeviceOverview({ devices, onUnblock }: DeviceOverviewProps) {
+export default function DeviceOverview({ devices, onUnblock, highlightId }: DeviceOverviewProps) {
   const getDeviceIcon = (type: string) => {
     const icons: Record<string, any> = {
       camera: Camera,
@@ -42,16 +43,31 @@ export default function DeviceOverview({ devices, onUnblock }: DeviceOverviewPro
         {devices.map((device) => {
           const Icon = getDeviceIcon(device.type);
           const isOnline = device.status === 'online';
+          
+          const isTargeted = device.id === highlightId;
 
           return (
             <div
               key={device.id}
               // Changed to Premium Glass card with hover glow
-              className="group relative bg-gray-900/40 backdrop-blur-md rounded-xl border border-white/5 p-5 transition-all duration-500 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] overflow-hidden"
+              className={`group relative bg-gray-900/40 backdrop-blur-md rounded-xl border p-5 transition-all duration-500 overflow-hidden ${
+                isTargeted 
+                  ? 'border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.2)] scale-[1.02]' 
+                  : 'border-white/5 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'
+              }`}
             >
               {/* Subtle hover gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
+              {isTargeted && (
+                <div className="absolute top-0 right-0 p-2">
+                  <span className="flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                </div>
+              )}
+              
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">

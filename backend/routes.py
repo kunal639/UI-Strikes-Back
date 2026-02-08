@@ -22,6 +22,8 @@ def get_state():
 @router.post("/simulate/normal")
 def simulate_normal():
     reset_to_normal()
+    # Explicitly clear the focus
+    system_state["affected_device"] = None 
     evaluate_state()
     return system_state
 
@@ -43,12 +45,16 @@ def simulate_validate(device_id: int):
     evaluate_state()
     return system_state
 
-@router.post("/devices/block/{device_id}")
+@router.post("/devices/{device_id}/block")
 def block_device(device_id: int):
     quarantine_device(device_id)
+    # Once blocked, the Agent should stop targeting it
+    system_state["affected_device"] = None 
+    evaluate_state()
     return {"status": "success"}
 
-@router.post("/devices/unblock/{device_id}")
+@router.post("/devices/{device_id}/unblock")
 def unblock_device(device_id: int):
     restore_device(device_id)
+    evaluate_state()
     return {"status": "success"}

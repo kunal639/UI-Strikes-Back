@@ -68,7 +68,7 @@ system_state = {
     "status" : "normal",
     "affected_device" : None,
     "confidence" : None,
-    "honeypot_triggered" : False 
+    "honeypot_triggered" : False
 }
 
 HISTORY_FILE = "history.json"
