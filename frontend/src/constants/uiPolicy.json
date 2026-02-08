@@ -1,28 +1,152 @@
 {
-    "policyId": "kavachin-security-state-orchestration",
-    "version": "1.0.0",
-    "states": {
+  "policyId": "kavachin-security-state-orchestration",
+  "version": "1.1.0",
+  "globals": {
+    "layoutRegions": ["header", "main", "rightRail"],
+    "alwaysOnComponents": [
+      {
+        "component": "SystemChat",
+        "region": "rightRail",
+        "whenStates": ["anomaly", "validated"],
+        "initialProps": {
+          "title": "KAVACHIN SystemChat",
+          "mode": "incident-ops",
+          "showSuggestions": true
+        }
+      }
+    ],
+    "escalationDefaults": {
+      "briefingFormat": "situation-evidence-impact-next-steps",
+      "commsTone": "concise",
+      "requireHumanApprovalFor": ["lockdown", "quarantine", "block-device"]
+    }
+  },
+  "states": {
     "normal": {
+      "intent": "Low-noise monitoring. Optimize for situational awareness without escalation overhead.",
+      "suggestedPrompts": [
+        "Show me any unusual activity trends in the last hour",
+        "Summarize current network health in 3 bullets"
+      ],
       "components": [
-        { "component": "StatusHeader", "initialProps": { "title": "SecureHome Protocol Active", "severity": "low" } },
-        { "component": "DeviceInventory", "initialProps": { "filter": "all" } },
-        { "component": "TelemetryOscilloscope", "initialProps": { "title": "Live Traffic Analysis" } }
+        {
+          "component": "StatusHeader",
+          "region": "header",
+          "initialProps": { "title": "SecureHome Protocol Active", "severity": "low" }
+        },
+        {
+          "component": "DeviceInventory",
+          "region": "main",
+          "initialProps": { "filter": "all" }
+        },
+        {
+          "component": "TelemetryOscilloscope",
+          "region": "main",
+          "initialProps": { "title": "Live Traffic Analysis" }
+        }
       ]
     },
     "anomaly": {
+      "intent": "Triage quickly. Bundle evidence and produce a crisp incident brief to support escalation.",
+      "suggestedPrompts": [
+        "Generate an incident brief for escalation",
+        "What evidence supports this being malicious vs. noisy behavior?",
+        "List the top 3 next actions with risk/impact tradeoffs"
+      ],
       "components": [
-        { "component": "StatusHeader", "initialProps": { "title": "Anomaly Detected", "severity": "medium" } },
-        { "component": "DeviceInventory", "initialProps": { "filter": "flagged" } },
-        { "component": "IncidentDesk" }
+        {
+          "component": "StatusHeader",
+          "region": "header",
+          "initialProps": { "title": "Anomaly Detected", "severity": "medium" }
+        },
+        {
+          "component": "IncidentBriefing",
+          "region": "main",
+          "initialProps": {
+            "template": "triage",
+            "sections": ["situation", "evidence", "impact", "recommendedNextSteps"],
+            "maxBulletsPerSection": 4
+          }
+        },
+        {
+          "component": "DeviceInventory",
+          "region": "main",
+          "initialProps": { "filter": "flagged" }
+        },
+        {
+          "component": "IncidentDesk",
+          "region": "main",
+          "initialProps": { "mode": "investigation" }
+        }
       ]
     },
-      "validated": {
-        "components": [
-          { "component": "StatusHeader", "initialProps": { "mode": "validated", "severity": "high" } },
-          { "component": "TelemetryOscilloscope" },
-          { "component": "IncidentDesk" },
-          { "component": "ActionControls", "initialProps": { "canLockdown": true } }
-        ]
-      }
+    "validated": {
+      "intent": "Containment decision + clear escalation comms. Make approval explicit and auditable.",
+      "guardrails": {
+        "highImpactActions": [
+          {
+            "action": "lockdown",
+            "requiresExplicitApproval": true,
+            "approvalCopy": "Containment may disrupt user devices. Confirm before proceeding."
+          }
+        ],
+        "preferProgressiveDisclosure": true
+      },
+      "suggestedPrompts": [
+        "Create an exec-friendly incident summary and a separate technical summary",
+        "Draft the message to page the on-call / incident commander",
+        "What would change your confidence up or down from here?"
+      ],
+      "components": [
+        {
+          "component": "StatusHeader",
+          "region": "header",
+          "initialProps": { "mode": "validated", "severity": "high", "title": "Threat Validated" }
+        },
+        {
+          "component": "IncidentBriefing",
+          "region": "main",
+          "initialProps": {
+            "template": "validated",
+            "sections": [
+              "situation",
+              "evidence",
+              "impact",
+              "decisionNeeded",
+              "recommendedNextSteps"
+            ],
+            "maxBulletsPerSection": 4
+          }
+        },
+        {
+          "component": "TelemetryOscilloscope",
+          "region": "main",
+          "initialProps": { "title": "Evidence: Live Traffic Analysis" }
+        },
+        {
+          "component": "IncidentDesk",
+          "region": "main",
+          "initialProps": { "mode": "response" }
+        },
+        {
+          "component": "DecisionGate",
+          "region": "rightRail",
+          "initialProps": {
+            "title": "Containment Authorization",
+            "requiresAck": true,
+            "ackText": "I confirm I understand the impact of containment actions.",
+            "decisionOptions": [
+              { "id": "approve", "label": "Authorize containment" },
+              { "id": "hold", "label": "Hold (need more evidence)" }
+            ]
+          }
+        },
+        {
+          "component": "ActionControls",
+          "region": "rightRail",
+          "initialProps": { "canLockdown": true }
+        }
+      ]
     }
   }
+}
